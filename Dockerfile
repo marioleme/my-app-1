@@ -1,35 +1,23 @@
-# Stage 1: Install dependencies
-FROM node:20-alpine AS deps
-WORKDIR /app
-# Copy only the package.json and yarn.lock files for dependency installation
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+# Imagem base
+FROM node:18-alpine
 
-# Stage 2: Build the Next.js application
-FROM node:20-alpine AS builder
+# Diretório de trabalho
 WORKDIR /app
-# Copy all the source code into the container
+
+# Copiar dependências
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm install
+
+# Copiar código do projeto
 COPY . .
-# Copy the dependencies installed in the previous stage
-COPY --from=deps /app/node_modules ./node_modules
-# Run the build command to generate the .next folder
-RUN yarn build
 
-# Stage 3: Production image
-FROM node:20-alpine AS runner
-WORKDIR /app
+# Build do Next.js
+RUN npm run build
 
-# Set the environment to production
-ENV NODE_ENV production
-
-# Copy the build artifacts and necessary files from the builder stage
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-# Expose the application port
+# Expõe a porta (pode mudar conforme precisar)
 EXPOSE 4000
 
-# Run the application
-CMD ["yarn", "start"]
+# Comando para iniciar
+CMD ["npm", "start"]
