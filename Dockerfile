@@ -1,23 +1,21 @@
-# Imagem base
-FROM node:18-alpine
-
-# Diretório de trabalho
+# ---- Build stage ----
+FROM node:18-alpine AS builder
 WORKDIR /app
-
-# Copiar dependências
 COPY package*.json ./
-
-# Instalar dependências
-RUN npm install
-
-# Copiar código do projeto
+RUN npm ci
 COPY . .
-
-# Build do Next.js
 RUN npm run build
 
-# Expõe a porta (pode mudar conforme precisar)
-EXPOSE 4000
+# ---- Run stage ----
+FROM node:18-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.* ./ 2>/dev/null || true
 
-# Comando para iniciar
+EXPOSE 3000
 CMD ["npm", "start"]
